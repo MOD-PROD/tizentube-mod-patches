@@ -37,11 +37,12 @@ val changeAppNamePatch = resourcePatch(
     val appName by stringOption(
         key = "appName",
         default = "YouTube\\nPremium",
+        // Labels equal the values, so Morphe Manager shows the real text.
         values = mapOf(
+            "YouTube\\nPremium" to "YouTube\\nPremium",
             "YouTube" to "YouTube",
             "YouTube MOD" to "YouTube MOD",
             "TizenTube MOD" to "TizenTube MOD",
-            "YouTube Premium (2 lignes)" to "YouTube\\nPremium",
         ),
         title = "App name",
         description = "Name shown under the icon / banner. Any text works. " +

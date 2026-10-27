@@ -50,7 +50,7 @@ val injectAdblockerUserscriptPatch = bytecodePatch(
         key = "userscriptFile",
         default = DEFAULT_USERSCRIPT_FILE,
         values = mapOf(
-            "Download/adblock.user.js" to DEFAULT_USERSCRIPT_FILE,
+            DEFAULT_USERSCRIPT_FILE to DEFAULT_USERSCRIPT_FILE,
             "Bundled script" to "",
         ),
         title = "Custom userscript file",
