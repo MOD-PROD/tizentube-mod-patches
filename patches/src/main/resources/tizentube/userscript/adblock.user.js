@@ -1,161 +1,236 @@
 /*
- * TizenTube MOD - userscript injected by "Inject Adblocker Userscript".
+ * TizenTube MOD - userscript injected by the "Inject Adblocker Userscript" patch.
  *
- * This is ysamjo's payload, taken unchanged from his "Werbe-Blocker-Userscript" patch
- * (github.com/ysamjo/morphe-patches, CobaltScriptInjector.FULL_PAYLOAD, GPLv3), verified by
- * him on a real Android TV device. It contains two independent parts:
+ * Runs inside the YouTube TV web app (youtube.com/tv) loaded by Cobalt.
+ * The injector re-runs this file several times while the app starts (the first documents are
+ * discarded by navigations), so every module guards itself with a window flag.
  *
- *  1. Ad blocker: hooks JSON.parse (and fetch when available) and deletes the ad keys
- *     (adPlacements, playerAds, adSlots, ...) from InnerTube responses before the app reads them.
- *  2. Playback speed fix: TizenTube stores the chosen speed but the player resets it to 1x after
- *     'canplay'. This part re-applies the stored speed and persists speeds picked from the
- *     native YouTube speed menu.
+ * Modules:
+ *  1. Ad blocker    - removes ad data from InnerTube responses before the app reads them.
+ *  2. Sponsored     - removes promoted tiles and the home masthead from feeds and search.
+ *  3. Speed keeper  - keeps the playback speed you picked across videos and app restarts.
  *
- * Both parts guard themselves with a window flag, because the injector re-runs this file
- * several times while the app starts.
+ * Plain ES5 on purpose: runs on every Cobalt build.
  */
-(function() {
-  if (window.__ysamjoTvAdblock) return;
-  window.__ysamjoTvAdblock = true;
-  var KEYS = ['adPlacements', 'playerAds', 'adSlots', 'adBreakHeartbeatParams', 'importantAdBreak', 'adBreakServiceMetadata'];
+(function () {
+  'use strict';
 
-  function strip(o) {
-    if (!o || typeof o !== 'object') return o;
-    for (var i = 0; i < KEYS.length; i++) {
-      if (KEYS[i] in o) {
-        try {
-          delete o[KEYS[i]];
-        } catch (e) {}
+  if (window.__tizenTubeMod) return;
+  window.__tizenTubeMod = true;
+
+  var TAG = '[TizenTube MOD] ';
+
+  /* ------------------------------------------------------------------ */
+  /* 1 + 2. Ad blocker and sponsored content                             */
+  /* ------------------------------------------------------------------ */
+
+  // Ad data at the top level of a player response.
+  var AD_KEYS = [
+    'adPlacements',
+    'playerAds',
+    'adSlots',
+    'adBreakHeartbeatParams',
+    'adBreakServiceMetadata',
+    'importantAdBreak'
+  ];
+
+  // Promoted items inside feed / search / watch-next lists.
+  var SPONSORED_RENDERERS = [
+    'adSlotRenderer',
+    'promotedVideoRenderer',
+    'promotedSparklesWebRenderer',
+    'tvMastheadRenderer',
+    'statementBannerRenderer'
+  ];
+
+  var MAX_DEPTH = 24;
+
+  function isObject(value) {
+    return value !== null && typeof value === 'object';
+  }
+
+  function removeAdKeys(response) {
+    if (!isObject(response)) return;
+    for (var i = 0; i < AD_KEYS.length; i++) {
+      if (AD_KEYS[i] in response) {
+        try { delete response[AD_KEYS[i]]; } catch (e) { /* frozen object */ }
       }
     }
-    return o;
   }
-  var parse = JSON.parse;
-  JSON.parse = function() {
-    var r = parse.apply(this, arguments);
+
+  function isSponsored(item) {
+    if (!isObject(item)) return false;
+    for (var i = 0; i < SPONSORED_RENDERERS.length; i++) {
+      if (item[SPONSORED_RENDERERS[i]]) return true;
+    }
+    return false;
+  }
+
+  // Walks the response (bounded depth) and drops sponsored items from every array.
+  function removeSponsored(node, depth) {
+    if (!isObject(node) || depth > MAX_DEPTH) return;
+
+    if (Array.isArray(node)) {
+      for (var i = node.length - 1; i >= 0; i--) {
+        if (isSponsored(node[i])) node.splice(i, 1);
+        else removeSponsored(node[i], depth + 1);
+      }
+      return;
+    }
+
+    for (var key in node) {
+      if (Object.prototype.hasOwnProperty.call(node, key)) removeSponsored(node[key], depth + 1);
+    }
+  }
+
+  // Entry point for every parsed JSON value. Only InnerTube-shaped objects are touched.
+  function clean(data) {
+    if (!isObject(data)) return data;
     try {
-      strip(r);
-    } catch (e) {}
-    return r;
+      if (data.responseContext || data.playerResponse || data.playabilityStatus) {
+        removeAdKeys(data);
+        removeAdKeys(data.playerResponse);
+        removeSponsored(data.contents, 0);
+        removeSponsored(data.onResponseReceivedActions, 0);
+        removeSponsored(data.onResponseReceivedCommands, 0);
+      }
+    } catch (e) { /* never break the app */ }
+    return data;
+  }
+
+  function isInnerTube(url) {
+    url = String(url || '');
+    return url.indexOf('/youtubei/') !== -1 || url.indexOf('get_midroll_info') !== -1;
+  }
+
+  // Hook: JSON.parse - main path, the TV app parses XHR responseText with it.
+  var nativeParse = JSON.parse;
+  JSON.parse = function () {
+    return clean(nativeParse.apply(this, arguments));
   };
-  var origFetch = window.fetch;
-  if (origFetch && typeof Response === 'function') {
-    window.fetch = function() {
-      return origFetch.apply(this, arguments).then(function(res) {
-        try {
-          var u = (res && res.url) || '';
-          if (u.indexOf('/youtubei/') !== -1 || u.indexOf('get_midroll_info') !== -1) {
-            return res.clone().text().then(function(t) {
-              try {
-                var j = parse(t);
-                strip(j);
-                return new Response(JSON.stringify(j), {
-                  status: res.status,
-                  statusText: res.statusText,
-                  headers: res.headers
-                });
-              } catch (e) {
-                return res;
-              }
-            }).catch(function() {
-              return res;
+
+  // Hook: fetch - rewrites the body of InnerTube responses.
+  var nativeFetch = window.fetch;
+  if (typeof nativeFetch === 'function' && typeof Response === 'function') {
+    window.fetch = function () {
+      return nativeFetch.apply(this, arguments).then(function (response) {
+        if (!response || !isInnerTube(response.url)) return response;
+        return response.clone().text().then(function (text) {
+          try {
+            return new Response(JSON.stringify(clean(nativeParse(text))), {
+              status: response.status,
+              statusText: response.statusText,
+              headers: response.headers
             });
+          } catch (e) {
+            return response;
           }
-        } catch (e) {}
-        return res;
+        }, function () { return response; });
       });
     };
   }
-  console.log('YSAMJO_ADBLOCK_ACTIVE');
-})();
-(function() {
-  if (window.__ysamjoSpeed) return;
-  window.__ysamjoSpeed = true;
-  var KEY = 'ytaf-configuration';
-  var FALLBACK = 1;
-  var quietUntil = 0;
 
-  function readCfg() {
+  // Hook: XHR with responseType 'json' (bypasses JSON.parse).
+  try {
+    var xhrResponse = Object.getOwnPropertyDescriptor(XMLHttpRequest.prototype, 'response');
+    if (xhrResponse && xhrResponse.get && xhrResponse.configurable) {
+      Object.defineProperty(XMLHttpRequest.prototype, 'response', {
+        configurable: true,
+        enumerable: xhrResponse.enumerable,
+        get: function () {
+          var value = xhrResponse.get.call(this);
+          return this.responseType === 'json' ? clean(value) : value;
+        }
+      });
+    }
+  } catch (e) { /* engine without configurable XHR getters */ }
+
+  console.log(TAG + 'ad blocker active');
+
+  /* ------------------------------------------------------------------ */
+  /* 3. Speed keeper                                                     */
+  /* ------------------------------------------------------------------ */
+  //
+  // TizenTube saves the chosen speed in localStorage['ytaf-configuration'].videoSpeed and applies
+  // it on 'canplay', but the player resets the rate to 1x right after. This module re-applies the
+  // saved speed a few times after each load, corrects any later drift, and saves speeds picked
+  // from YouTube's own speed menu (which TizenTube does not record).
+  //
+  // A rate change counts as the user's choice only while the speed menu is on screen; player
+  // resets happen with the menu closed. 1x is never saved, so a reset can never overwrite a choice.
+
+  var CONFIG_KEY = 'ytaf-configuration';
+  var SPEED_MIN = 0.1;
+  var SPEED_MAX = 5;
+  var EPSILON = 0.001;
+  var settleUntil = 0; // While > now, rate changes are our own and are ignored.
+
+  function readConfig() {
+    try { return nativeParse(window.localStorage[CONFIG_KEY] || '{}') || {}; } catch (e) { return {}; }
+  }
+
+  function savedSpeed() {
+    var speed = parseFloat(readConfig().videoSpeed);
+    return isFinite(speed) && speed >= SPEED_MIN && speed <= SPEED_MAX ? speed : 1;
+  }
+
+  function saveSpeed(speed) {
     try {
-      var c = JSON.parse(window.localStorage[KEY] || '{}');
-      return c || {};
-    } catch (e) {
-      return {};
+      var config = readConfig();
+      config.videoSpeed = speed;
+      window.localStorage[CONFIG_KEY] = JSON.stringify(config);
+    } catch (e) { /* storage unavailable */ }
+  }
+
+  function applySpeed(speed) {
+    var video = document.querySelector('video');
+    if (video && Math.abs(video.playbackRate - speed) > EPSILON) {
+      try { video.playbackRate = speed; } catch (e) { /* not ready */ }
     }
   }
 
-  function desired() {
-    var v = readCfg().videoSpeed;
-    if (typeof v === 'string') v = parseFloat(v);
-    if (typeof v !== 'number' || !isFinite(v) || v <= 0 || v > 5) return FALLBACK;
-    return v;
+  function enforceAfterLoad() {
+    var speed = savedSpeed();
+    settleUntil = Date.now() + 1500;
+    // Several attempts: the player's own reset lands shortly after 'canplay'.
+    setTimeout(function () { applySpeed(speed); }, 0);
+    setTimeout(function () { applySpeed(speed); }, 250);
+    setTimeout(function () { applySpeed(speed); }, 1000);
   }
 
-  function persist(v) {
+  // The speed menu lists several "1.25x"-style labels; its title is also checked.
+  function speedMenuOpen() {
     try {
-      var c = readCfg();
-      c.videoSpeed = v;
-      window.localStorage[KEY] = JSON.stringify(c);
-      console.log('YSAMJO_SPEED_PERSIST ' + v);
-    } catch (e) {
-      console.log('YSAMJO_SPEED_PERSIST_FAIL ' + e);
-    }
-  }
-
-  function apply(v) {
-    var el = document.querySelector('video');
-    if (!el) return;
-    if (Math.abs(el.playbackRate - v) < 0.0005) return;
-    try {
-      el.playbackRate = v;
-      console.log('YSAMJO_SPEED_APPLY ' + v);
-    } catch (e) {}
-  }
-
-  function enforce() {
-    var v = desired();
-    console.log('YSAMJO_SPEED_ENFORCE ' + v);
-    quietUntil = Date.now() + 1500;
-    setTimeout(function() {
-      apply(v);
-    }, 0);
-    setTimeout(function() {
-      apply(v);
-    }, 250);
-    setTimeout(function() {
-      apply(v);
-    }, 1000);
-  }
-
-  function menuOpen() {
-    try {
-      var b = document.body ? document.body.textContent : '';
-      if (!b) return false;
-      if (b.indexOf('Wiedergabegeschwindigkeit') !== -1) return true;
-      if (b.indexOf('Playback speed') !== -1) return true;
-      var hits = b.match(/[0-9]\.[0-9]{1,2}x/g);
-      return !!(hits && hits.length >= 4);
+      var text = document.body ? document.body.textContent : '';
+      if (!text) return false;
+      if (text.indexOf('Playback speed') !== -1 || text.indexOf('Vitesse de lecture') !== -1) return true;
+      var labels = text.match(/\d\.\d{1,2}x/g);
+      return !!(labels && labels.length >= 4);
     } catch (e) {
       return false;
     }
   }
-  document.addEventListener('canplay', enforce, true);
-  document.addEventListener('loadeddata', enforce, true);
-  document.addEventListener('ratechange', function(ev) {
-    var el = ev.target;
-    if (!el || !el.tagName || el.tagName !== 'VIDEO') return;
-    var v = el.playbackRate;
-    var open = menuOpen();
-    console.log('YSAMJO_SPEED_RATE ' + v + ' quiet=' + (Date.now() < quietUntil) + ' menu=' + (open ? 1 : 0));
-    if (Date.now() < quietUntil) return;
-    if (!open) return;
-    if (typeof v !== 'number' || !isFinite(v) || v <= 0 || v > 5) return;
-    if (Math.abs(v - desired()) < 0.0005) return;
-    if (Math.abs(v - 1) < 0.0005) return;
-    persist(v);
+
+  // Capture phase on document: catches media events of any <video>, current or future.
+  document.addEventListener('canplay', enforceAfterLoad, true);
+  document.addEventListener('loadeddata', enforceAfterLoad, true);
+
+  document.addEventListener('ratechange', function (event) {
+    var video = event.target;
+    if (!video || video.tagName !== 'VIDEO' || Date.now() < settleUntil) return;
+
+    var speed = video.playbackRate;
+    if (!isFinite(speed) || speed < SPEED_MIN || speed > SPEED_MAX) return;
+    if (Math.abs(speed - 1) < EPSILON) return;             // never save 1x
+    if (Math.abs(speed - savedSpeed()) < EPSILON) return;  // nothing new
+    if (!speedMenuOpen()) return;                          // player reset, not the user
+
+    saveSpeed(speed);
+    console.log(TAG + 'speed saved: ' + speed);
   }, true);
-  setInterval(function() {
-    if (Date.now() < quietUntil) return;
-    apply(desired());
+
+  // Late resets: re-apply every 2 s if the rate drifted.
+  setInterval(function () {
+    if (Date.now() >= settleUntil) applySpeed(savedSpeed());
   }, 2000);
 })();

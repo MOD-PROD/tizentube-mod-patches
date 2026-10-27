@@ -1,140 +1,137 @@
+<div align="center">
+
 # TizenTube MOD Patches
 
-Bundle de 4 patches pour **TizenTube Cobalt 2.0.3** (`io.gh.reisxd.tizentube.cobalt`, APK unique), compatible avec Morphe (patcher 2.0.0).
+**Ad-free, renamed and re-skinned TizenTube on Android TV — patched on-device with Morphe.**
 
-## Structure
+[![Release](https://img.shields.io/github/v/release/MOD-PROD/tizentube-mod-patches?style=for-the-badge&color=e60012)](https://github.com/MOD-PROD/tizentube-mod-patches/releases/latest)
+[![Build](https://img.shields.io/github/actions/workflow/status/MOD-PROD/tizentube-mod-patches/release.yml?style=for-the-badge&label=build)](https://github.com/MOD-PROD/tizentube-mod-patches/actions)
+[![License](https://img.shields.io/badge/license-GPLv3-blue?style=for-the-badge)](LICENSE)
 
-```
-tizentube-mod-patches/
-├── settings.gradle.kts            # plugin app.morphe.patches 2.0.0 + dépôts (GitHub Packages, JitPack)
-├── build.gradle.kts
-├── gradle.properties              # version du bundle
-├── gradle/libs.versions.toml      # morphe-patcher, morphe-patches-library, smali
-├── patches-bundle.json            # rempli par la CI (release.yml) pour Morphe Manager
-├── patches-list.json              # généré par :patches:generatePatchesList
-├── branding-src/                  # images maîtres + script de génération des densités
-│   ├── icon_master.png
-│   ├── banner_master.png
-│   └── make_branding.py
-├── extensions/extension/          # code Java injecté dans l'APK (→ extensions/extension.mpe)
-│   └── src/main/java/app/gonzo/extension/
-│       └── adblock/CobaltUserscriptInjector.java
-└── patches/
-    ├── build.gradle.kts           # about{} + dépendance morphe-patches-library
-    └── src/main/
-        ├── kotlin/app/gonzo/patches/
-        │   ├── shared/Constants.kt                       # compatibilité TizenTube 2.0.3
-        │   ├── branding/ModIconAndBannerPatch.kt         # 1
-        │   ├── branding/ChangeAppNamePatch.kt            # 4
-        │   ├── clone/CloneAppPatch.kt                    # 2
-        │   └── ads/Fingerprints.kt + InjectAdblockerUserscriptPatch.kt  # 3
-        └── resources/tizentube/
-            ├── branding/icon/{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}.png
-            ├── branding/banner/{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}.png
-            └── userscript/adblock.user.js
-```
+<img src="branding-src/preview.png" alt="Launcher banner and app icon" width="720">
 
-## Les 4 patches
+</div>
+
+---
+
+## ✨ Features
+
+- 🚫 **No ads** — ad breaks are removed from YouTube's responses before the app ever sees them.
+- 🧹 **No sponsored tiles** — promoted videos and the home masthead disappear from feeds and search.
+- ⏩ **Playback speed that sticks** — the speed you pick is kept across videos and restarts.
+- 🎨 **New launcher artwork** — icon *and* Android TV banner replaced (the TV home screen shows the banner).
+- ✏️ **Rename the app** — any name, even on two lines (`YouTube\nPremium`).
+- 👯 **Clone install** — keep the original TizenTube installed next to the modded one.
+
+## 🎯 Supported apps
+
+| App | Package | Version |
+|---|---|---|
+| TizenTube Cobalt | `io.gh.reisxd.tizentube.cobalt` | **2.0.3** (single APK: `cobalt-arm.apk` / `cobalt-arm64.apk`) |
+| YouTube | `com.google.android.youtube` | any — *Change app name* only |
+
+## 📦 Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.3.0](https://github.com/MOD-PROD/tizentube-mod-patches/releases/tag/v1.3.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;5 patches total
-<details open>
-<summary>📦 TizenTube&nbsp;&nbsp;•&nbsp;&nbsp;4 patches</summary>
-<br>
-
-**🎯 Supported versions:**
-
-| 2.0.3 |
-| :---: |
-
-| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
-|----------|----------------|-----------|
-| [Change app name](#change-app-name) | Changes the app name shown on the launcher and in the app list. | • App name |
-| [Clone app](#clone-app) | Changes the package name so the patched app can be installed next to the original TizenTube. Default package name: mod.android.youtube.tv. | • Package name<br>• Update permissions<br>• Update providers |
-| [Inject Adblocker Userscript](#inject-adblocker-userscript) | Injects a JavaScript userscript into the YouTube TV web app running in Cobalt. The script removes ad placements from InnerTube responses before the app reads them. | • Custom userscript file |
-| [MOD Icon and Banner](#mod-icon-and-banner) | Replaces the app icon and the Android TV launcher banner with YouTube artwork. On Android TV the launcher shows the banner, so both are replaced. | • Replace icon<br>• Replace banner |
-
-</details>
-
-<details open>
-<summary>📦 YouTube&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
-<br>
-
-| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
-|----------|----------------|-----------|
-| [Change app name](#change-app-name) | Changes the app name shown on the launcher and in the app list. | • App name |
-
-</details>
-
 <!-- PATCHES_END -->
 
-| # | Patch | Type | Défaut | Options |
-|---|---|---|---|---|
-| 1 | MOD Icon and Banner | resource | non | `replaceIcon`, `replaceBanner` |
-| 2 | Clone app | resource | non | `packageName` (par défaut `mod.android.youtube.tv`), `updatePermissions`, `updateProviders` |
-| 3 | Inject Adblocker Userscript | bytecode + resource + extension | oui | `userscriptFile` (par défaut `/storage/emulated/0/Download/adblock.user.js` ; si le fichier n'existe pas, le script intégré de ysamjo est utilisé) |
-| 4 | Change app name | resource | non | `appName` (par défaut `YouTube\nPremium`, ou n'importe quel texte ; `\n` = retour à la ligne, ex. `YouTube\nPremium`). Compatible TizenTube **et YouTube** (`com.google.android.youtube`, toutes versions) |
+### Options at a glance
 
-Les patches 1 à 3 visent uniquement TizenTube 2.0.3 ; Change app name ne touche que le manifest et marche aussi sur YouTube. L'affichage sur 2 lignes dépend du launcher (certains launchers TV n'en montrent qu'une).
+| Patch | Default | Options |
+|---|:---:|---|
+| **Inject Adblocker Userscript** | ✅ | `userscriptFile` — path to your own `.js` (default `/storage/emulated/0/Download/adblock.user.js`). If the file does not exist, the bundled script is used. |
+| **MOD Icon and Banner** | — | `replaceIcon`, `replaceBanner` |
+| **Change app name** | — | `appName` — default `YouTube\nPremium`; `\n` = line break |
+| **Clone app** | — | `packageName` — default `mod.android.youtube.tv`; `updatePermissions`, `updateProviders` |
 
-Clone app n'est utile que pour garder le TizenTube original installé à côté. L'adblock est une couche en plus de celui de TizenTube.
+> Two-line names depend on the launcher: most phone launchers show two lines, some TV launchers only one.
 
-## Patch 1 — où placer les images
+## 🚀 Install
 
-Le patch ne code pas les noms en dur : il lit `android:icon`, `android:roundIcon` et `android:banner` dans le manifest (dans TizenTube 2.0.x : `@mipmap/ic_app` et `@drawable/app_banner`), retrouve chaque fichier `res/<type>-<densité>/<nom>` et y copie l'image de la bonne densité.
+1. Install **Morphe Manager** from [morphe.software](https://morphe.software).
+2. Add this patch source — open on the device running Morphe Manager:
+   **https://morphe.software/add-source?github=MOD-PROD/tizentube-mod-patches**
+3. Download the original TizenTube Cobalt **2.0.3** APK from the [TizenTube releases](https://github.com/reisxd/TizenTubeCobalt/releases).
+4. In Morphe Manager, pick the APK, select the patches, adjust the options, and patch.
+5. Install the result on your Android TV.
 
-Images attendues dans le bundle :
+Without *Clone app*, uninstall any previous patched build first (different signature).
 
-| Fichier | Taille | Remplace |
+## 🛠️ How it works
+
+TizenTube Cobalt is not a WebView app: it runs the YouTube TV web app inside **Cobalt**, a Chromium-based engine. There is no native ad code to patch, so the adblock patch:
+
+1. writes the userscript into the APK as `assets/tizentube-mod/adblock.user.js`;
+2. adds a call in `CobaltActivity.onCreate()` to a small Java extension;
+3. the extension waits for the page, then runs the script through Cobalt's own `evaluateJavaScript` JNI entry point — in the page's main world, so it can hook `JSON.parse`, `fetch` and `XMLHttpRequest`.
+
+The script is re-injected for the first minutes (early documents are replaced by navigations) and guards itself, so repeats are no-ops. Check it on device with:
+
+```
+adb logcat -s TizenTubeMod
+```
+
+## 🎨 Custom artwork
+
+Artwork lives in `patches/src/main/resources/tizentube/branding/`:
+
+| File | Size | Replaces |
 |---|---|---|
-| `resources/tizentube/branding/icon/mdpi.png` | 80×80 | `res/mipmap-mdpi-v4/ic_app` |
-| `…/icon/hdpi.png` | 120×120 | `res/mipmap-hdpi-v4/ic_app` |
-| `…/icon/xhdpi.png` | 160×160 | `res/mipmap-xhdpi-v4/ic_app` |
-| `…/icon/xxhdpi.png` | 240×240 | `res/mipmap-xxhdpi-v4/ic_app` |
-| `…/icon/xxxhdpi.png` | 320×320 | `res/mipmap-xxxhdpi-v4/ic_app` |
-| `…/banner/mdpi.png` | 160×90 | `res/drawable/app_banner` |
-| `…/banner/hdpi.png` | 240×135 | `res/drawable-hdpi-v4/app_banner` |
-| `…/banner/xhdpi.png` | 320×180 | `res/drawable-xhdpi-v4/app_banner` (taille de référence Android TV) |
-| `…/banner/xxhdpi.png` | 480×270 | `res/drawable-xxhdpi-v4/app_banner` |
-| `…/banner/xxxhdpi.png` | 640×360 | `res/drawable-xxxhdpi-v4/app_banner` |
+| `icon/mdpi.png` … `icon/xxxhdpi.png` | 80 → 320 px | `@mipmap/ic_app` |
+| `banner/mdpi.png` … `banner/xxxhdpi.png` | 160×90 → 640×360 | `@drawable/app_banner` (320×180 = Android TV reference) |
 
-Pour changer le visuel : remplace `branding-src/icon_master.png` (carré) et `branding-src/banner_master.png` (16:9), puis :
+To change it, replace `branding-src/icon_master.png` (square) and `branding-src/banner_master.png` (16:9), then:
 
 ```
 pip install pillow
-python3 branding-src/make_branding.py --no-badge # images utilisées telles quelles (réglage actuel)
-python3 branding-src/make_branding.py            # ajoute une pastille MOD + un tag TizenTube
+python3 branding-src/make_branding.py --no-badge   # use the images as they are
+python3 branding-src/make_branding.py              # add a MOD pill + TizenTube tag
 ```
 
-## Patch 3 — userscript
+The patch reads `android:icon` / `android:banner` from the manifest, so it keeps working if a release renames the resources.
 
-- Script livré : `patches/src/main/resources/tizentube/userscript/adblock.user.js` (ES5, sans requête externe).
-- Le patch l'écrit dans l'APK sous `assets/tizentube-mod/adblock.user.js` ; l'extension le lit au démarrage (fallback minimal embarqué si l'asset manque).
-- C'est le script de ysamjo, repris sans modification (son `FULL_PAYLOAD`, testé sur appareil) :
-  - anti-pub : hook de `JSON.parse` et `fetch`, qui retire `adPlacements`, `playerAds`, `adSlots`… des réponses InnerTube ;
-  - correctif de vitesse : la vitesse choisie n'est plus remise à 1x à chaque vidéo.
-- Logcat : `adb logcat -s TizenTubeMod` → « Userscript injected ».
+## 🧩 Custom userscript
 
-## Build
+Put your script at `/storage/emulated/0/Download/adblock.user.js` (or set another path in the option). Rules:
 
-Les artefacts Morphe sont sur GitHub Packages : un token GitHub classique avec le scope `read:packages` suffit.
+- plain **ES5** (no `let`, `const`, arrow functions);
+- wrap it in `(function(){ ... })();` and start with a guard: `if (window.__myScript) return; window.__myScript = true;`
+- it **replaces** the bundled script — start from [`adblock.user.js`](patches/src/main/resources/tizentube/userscript/adblock.user.js) to keep ad blocking.
 
-```
+## 🏗️ Build
+
+Morphe artifacts are hosted on GitHub Packages; any GitHub account works with a classic token (`read:packages`):
+
+```properties
 # ~/.gradle/gradle.properties
-gpr.user=TON_PSEUDO_GITHUB
+gpr.user=YOUR_GITHUB_USERNAME
 gpr.key=ghp_xxx
-
-./gradlew :patches:buildAndroid :patches:generatePatchesList
-# → patches/build/libs/patches-1.0.0.mpp
 ```
 
-Puis dans Morphe Manager : Sources → + → fichier local `.mpp`, ou, une fois une release publiée par la CI :
+```
+./gradlew buildAndroid
+# → patches/build/libs/patches-<version>.mpp
+```
+
+Releases are automatic: every `feat:` / `fix:` commit on `main` builds and publishes a new `.mpp` (semantic-release).
+
+## 📁 Project layout
 
 ```
-https://morphe.software/add-source?github=MOD-PROD/tizentube-mod-patches
+patches/src/main/kotlin/app/gonzo/patches/
+├── ads/        Inject Adblocker Userscript + fingerprints
+├── branding/   MOD Icon and Banner, Change app name
+├── clone/      Clone app
+└── shared/     Compatibility (TizenTube 2.0.3, YouTube)
+patches/src/main/resources/tizentube/
+├── branding/   icon + banner, one PNG per density
+└── userscript/ adblock.user.js
+extensions/extension/   Java code added to the APK (userscript injector)
+branding-src/           master images + generator script
 ```
 
-## Crédits
+## ⚖️ License
 
-- Clone app adapté de [MorpheApp/morphe-patches](https://github.com/MorpheApp/morphe-patches) (GPLv3 + conditions section 7, voir NOTICE).
-- Technique d'injection Cobalt et idée du patch branding : [ysamjo/morphe-patches](https://github.com/ysamjo/morphe-patches) (GPLv3).
+GPLv3 — see [LICENSE](LICENSE) and [NOTICE](NOTICE). Built with the [Morphe](https://morphe.software) patcher; *Clone app* is adapted from the official Morphe patches.
+
+Not affiliated with YouTube, Google or the TizenTube project. Use it with apps you are allowed to modify.

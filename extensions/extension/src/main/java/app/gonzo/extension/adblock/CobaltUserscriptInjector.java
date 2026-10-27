@@ -14,9 +14,8 @@ import java.nio.charset.StandardCharsets;
 /**
  * Injects a JavaScript userscript into the YouTube TV web app running inside Cobalt.
  *
- * <p>Technique credited to ysamjo (github.com/ysamjo/morphe-patches, GPLv3). Cobalt is not an
- * Android WebView, so there is no {@code WebView.evaluateJavascript()}. But the engine still
- * contains Chromium's JS injection path:
+ * <p>Cobalt is not an Android WebView, so there is no {@code WebView.evaluateJavascript()}.
+ * But the engine still contains Chromium's JS injection path:
  * <ul>
  *   <li>{@code CobaltActivity.getActiveWebContents()} returns the live page,</li>
  *   <li>its implementation keeps the native pointer in a {@code long} field,</li>

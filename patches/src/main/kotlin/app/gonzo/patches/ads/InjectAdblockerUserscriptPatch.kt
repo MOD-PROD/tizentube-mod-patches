@@ -27,10 +27,10 @@ private object UserscriptResources
  *
  * TizenTube Cobalt has no native ad code to patch: ads are delivered and scheduled by the web app.
  * So the patch adds back the missing Java caller of Cobalt's JS injection path
- * (see CobaltUserscriptInjector, technique by ysamjo):
+ * (see CobaltUserscriptInjector):
  *
  *  1. Resource step: the userscript is written to assets/tizentube-mod/adblock.user.js.
- *     The bundled script is ysamjo's payload (ad blocker + playback speed fix); the
+ *     The bundled script blocks ads and sponsored tiles and keeps the playback speed; the
  *     "userscriptFile" option can point to your own .js (used only if the file exists).
  *  2. Bytecode step: CobaltActivity.onCreate() calls CobaltUserscriptInjector.schedule(this),
  *     which waits for the page and calls the registered evaluateJavaScript native.
@@ -51,11 +51,11 @@ val injectAdblockerUserscriptPatch = bytecodePatch(
         default = DEFAULT_USERSCRIPT_FILE,
         values = mapOf(
             "Download/adblock.user.js" to DEFAULT_USERSCRIPT_FILE,
-            "Bundled script (ysamjo)" to "",
+            "Bundled script" to "",
         ),
         title = "Custom userscript file",
         description = "Absolute path to a .js file on the patching device. If the file does not exist, " +
-            "the bundled ysamjo script (ad blocker + playback speed fix) is used.",
+            "the bundled script (ad blocker, sponsored tiles, playback speed keeper) is used.",
         required = false,
     )
 
