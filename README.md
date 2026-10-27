@@ -1,6 +1,6 @@
 # TizenTube MOD Patches
 
-Bundle de 3 patches pour **TizenTube Cobalt 2.0.3** (`io.gh.reisxd.tizentube.cobalt`, APK unique), compatible avec Morphe (patcher 2.0.0).
+Bundle de 4 patches pour **TizenTube Cobalt 2.0.3** (`io.gh.reisxd.tizentube.cobalt`, APK unique), compatible avec Morphe (patcher 2.0.0).
 
 ## Structure
 
@@ -25,6 +25,7 @@ tizentube-mod-patches/
         ├── kotlin/app/gonzo/patches/
         │   ├── shared/Constants.kt                       # compatibilité TizenTube 2.0.3
         │   ├── branding/ModIconAndBannerPatch.kt         # 1
+        │   ├── branding/ChangeAppNamePatch.kt            # 4
         │   ├── clone/CloneAppPatch.kt                    # 2
         │   └── ads/Fingerprints.kt + InjectAdblockerUserscriptPatch.kt  # 3
         └── resources/tizentube/
@@ -33,7 +34,7 @@ tizentube-mod-patches/
             └── userscript/adblock.user.js
 ```
 
-## Les 3 patches
+## Les 4 patches
 
 <!-- PATCHES_START EXPANDED -->
 > **[v1.0.1](https://github.com/MOD-PROD/tizentube-mod-patches/releases/tag/v1.0.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;3 patches total
@@ -61,6 +62,7 @@ tizentube-mod-patches/
 | 1 | MOD Icon and Banner | resource | non | `replaceIcon`, `replaceBanner` |
 | 2 | Clone app | resource | non | `packageName` (mod.youtube.tv), `updatePermissions`, `updateProviders` |
 | 3 | Inject Adblocker Userscript | bytecode + resource + extension | oui | `userscriptFile` (chemin d'un .js perso) |
+| 4 | Change app name | resource | non | `appName` (YouTube, ou n'importe quel texte) |
 
 Clone app n'est utile que pour garder le TizenTube original installé à côté. L'adblock est une couche en plus de celui de TizenTube.
 
