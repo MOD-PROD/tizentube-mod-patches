@@ -1,174 +1,161 @@
 /*
- * TizenTube MOD - Ad Blocker Userscript
+ * TizenTube MOD - userscript injected by "Inject Adblocker Userscript".
  *
- * Injected into the YouTube TV web app (youtube.com/tv) running inside Cobalt by the
- * "Inject Adblocker Userscript" patch. The injector re-runs this file every few hundred
- * milliseconds during the first minutes, because the first documents are thrown away by
- * navigations. The guard below makes every repeat in the same document a no-op.
+ * This is ysamjo's payload, taken unchanged from his "Werbe-Blocker-Userscript" patch
+ * (github.com/ysamjo/morphe-patches, CobaltScriptInjector.FULL_PAYLOAD, GPLv3), verified by
+ * him on a real Android TV device. It contains two independent parts:
  *
- * Rules for editing this file:
- *  - Plain ES5 (no arrow functions, no let/const, no template strings): runs on every Cobalt build.
- *  - No external requests: everything happens locally in the page.
- *  - Keep the guard flag, otherwise the hooks stack up on each re-injection.
+ *  1. Ad blocker: hooks JSON.parse (and fetch when available) and deletes the ad keys
+ *     (adPlacements, playerAds, adSlots, ...) from InnerTube responses before the app reads them.
+ *  2. Playback speed fix: TizenTube stores the chosen speed but the player resets it to 1x after
+ *     'canplay'. This part re-applies the stored speed and persists speeds picked from the
+ *     native YouTube speed menu.
  *
- * How it works: the TV app turns InnerTube responses (/youtubei/v1/player, /next, /browse)
- * into objects with JSON.parse, or receives them through fetch / XMLHttpRequest. The ad data
- * lives under well-known keys (adPlacements, playerAds, adSlots, ...). Removing those keys
- * before the app reads them means the player never schedules an ad break.
+ * Both parts guard themselves with a window flag, because the injector re-runs this file
+ * several times while the app starts.
  */
-(function () {
-  'use strict';
+(function() {
+  if (window.__ysamjoTvAdblock) return;
+  window.__ysamjoTvAdblock = true;
+  var KEYS = ['adPlacements', 'playerAds', 'adSlots', 'adBreakHeartbeatParams', 'importantAdBreak', 'adBreakServiceMetadata'];
 
-  if (window.__tizenTubeModAdblock) return;
-  window.__tizenTubeModAdblock = true;
-
-  // Keys removed at the top level of a player response (and of a nested playerResponse).
-  var AD_KEYS = [
-    'adPlacements',
-    'playerAds',
-    'adSlots',
-    'adBreakHeartbeatParams',
-    'adBreakServiceMetadata',
-    'importantAdBreak'
-  ];
-
-  // Renderers removed from feed / search / watch-next lists (promoted tiles, masthead ads).
-  var AD_RENDERERS = [
-    'adSlotRenderer',
-    'promotedSparklesWebRenderer',
-    'promotedVideoRenderer',
-    'tvMastheadRenderer',
-    'statementBannerRenderer'
-  ];
-
-  var stats = { responses: 0, keys: 0, renderers: 0 };
-
-  function isObject(value) {
-    return value !== null && typeof value === 'object';
-  }
-
-  /** Remove the ad keys from a player response. */
-  function stripPlayerResponse(response) {
-    if (!isObject(response)) return;
-    for (var i = 0; i < AD_KEYS.length; i++) {
-      if (AD_KEYS[i] in response) {
-        try { delete response[AD_KEYS[i]]; stats.keys++; } catch (e) { /* frozen object */ }
+  function strip(o) {
+    if (!o || typeof o !== 'object') return o;
+    for (var i = 0; i < KEYS.length; i++) {
+      if (KEYS[i] in o) {
+        try {
+          delete o[KEYS[i]];
+        } catch (e) {}
       }
     }
+    return o;
   }
-
-  /** True if an item of a list is an ad renderer (e.g. { adSlotRenderer: {...} }). */
-  function isAdItem(item) {
-    if (!isObject(item)) return false;
-    for (var i = 0; i < AD_RENDERERS.length; i++) {
-      if (item[AD_RENDERERS[i]]) return true;
-    }
-    return false;
-  }
-
-  /** Walk the object tree (bounded depth) and drop ad renderers from every array. */
-  function stripRenderers(node, depth) {
-    if (!isObject(node) || depth > 24) return;
-
-    if (Array.isArray(node)) {
-      for (var i = node.length - 1; i >= 0; i--) {
-        if (isAdItem(node[i])) {
-          node.splice(i, 1);
-          stats.renderers++;
-        } else {
-          stripRenderers(node[i], depth + 1);
-        }
-      }
-      return;
-    }
-
-    for (var key in node) {
-      if (Object.prototype.hasOwnProperty.call(node, key)) {
-        stripRenderers(node[key], depth + 1);
-      }
-    }
-  }
-
-  /** Entry point for any parsed InnerTube JSON. Returns the same object. */
-  function clean(data) {
-    if (!isObject(data)) return data;
+  var parse = JSON.parse;
+  JSON.parse = function() {
+    var r = parse.apply(this, arguments);
     try {
-      // Only touch objects that look like InnerTube responses, keeps the cost low.
-      if (data.responseContext || data.playerResponse || data.playabilityStatus || data.contents) {
-        stats.responses++;
-        stripPlayerResponse(data);
-        stripPlayerResponse(data.playerResponse);
-        stripRenderers(data.contents, 0);
-        stripRenderers(data.onResponseReceivedActions, 0);
-      }
-    } catch (e) { /* never break the app */ }
-    return data;
-  }
-
-  function isInnerTubeUrl(url) {
-    url = String(url || '');
-    return url.indexOf('/youtubei/') !== -1 || url.indexOf('get_midroll_info') !== -1;
-  }
-
-  // --- Hook 1: JSON.parse (covers XMLHttpRequest + responseText, the main path on TV) ---
-  var originalParse = JSON.parse;
-  JSON.parse = function () {
-    return clean(originalParse.apply(this, arguments));
+      strip(r);
+    } catch (e) {}
+    return r;
   };
-
-  // --- Hook 2: fetch (rewrites the body of InnerTube responses) ---
-  var originalFetch = window.fetch;
-  if (typeof originalFetch === 'function' && typeof Response === 'function') {
-    window.fetch = function () {
-      return originalFetch.apply(this, arguments).then(function (response) {
-        if (!response || !isInnerTubeUrl(response.url)) return response;
-        return response.clone().text().then(function (text) {
-          try {
-            var json = JSON.stringify(clean(originalParse(text)));
-            return new Response(json, {
-              status: response.status,
-              statusText: response.statusText,
-              headers: response.headers
+  var origFetch = window.fetch;
+  if (origFetch && typeof Response === 'function') {
+    window.fetch = function() {
+      return origFetch.apply(this, arguments).then(function(res) {
+        try {
+          var u = (res && res.url) || '';
+          if (u.indexOf('/youtubei/') !== -1 || u.indexOf('get_midroll_info') !== -1) {
+            return res.clone().text().then(function(t) {
+              try {
+                var j = parse(t);
+                strip(j);
+                return new Response(JSON.stringify(j), {
+                  status: res.status,
+                  statusText: res.statusText,
+                  headers: res.headers
+                });
+              } catch (e) {
+                return res;
+              }
+            }).catch(function() {
+              return res;
             });
-          } catch (e) {
-            return response;
           }
-        }, function () { return response; });
+        } catch (e) {}
+        return res;
       });
     };
   }
+  console.log('YSAMJO_ADBLOCK_ACTIVE');
+})();
+(function() {
+  if (window.__ysamjoSpeed) return;
+  window.__ysamjoSpeed = true;
+  var KEY = 'ytaf-configuration';
+  var FALLBACK = 1;
+  var quietUntil = 0;
 
-  // --- Hook 3: XHR responseType 'json' (bypasses JSON.parse) ---
-  try {
-    var descriptor = Object.getOwnPropertyDescriptor(XMLHttpRequest.prototype, 'response');
-    if (descriptor && descriptor.get && descriptor.configurable) {
-      Object.defineProperty(XMLHttpRequest.prototype, 'response', {
-        configurable: true,
-        enumerable: descriptor.enumerable,
-        get: function () {
-          var value = descriptor.get.call(this);
-          return this.responseType === 'json' ? clean(value) : value;
-        }
-      });
-    }
-  } catch (e) { /* engine without configurable XHR getters */ }
-
-  // --- Safety net: skip any ad that still reaches the player ---
-  // The TV player adds "ad-showing" / "ad-interrupting" on its root while an ad plays.
-  setInterval(function () {
+  function readCfg() {
     try {
-      var player = document.querySelector('.ad-showing, .ad-interrupting');
-      if (!player) return;
-      var video = document.querySelector('video');
-      if (video && isFinite(video.duration) && video.duration > 0) {
-        video.currentTime = video.duration; // jump to the end of the ad
-      }
-      var skip = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, .ytp-skip-ad-button');
-      if (skip && skip.click) skip.click();
-    } catch (e) { /* ignore */ }
-  }, 500);
+      var c = JSON.parse(window.localStorage[KEY] || '{}');
+      return c || {};
+    } catch (e) {
+      return {};
+    }
+  }
 
-  // Debug helper: run `window.__tizenTubeModAdblockStats` in remote devtools.
-  window.__tizenTubeModAdblockStats = stats;
-  console.log('[TizenTube MOD] adblock userscript active');
+  function desired() {
+    var v = readCfg().videoSpeed;
+    if (typeof v === 'string') v = parseFloat(v);
+    if (typeof v !== 'number' || !isFinite(v) || v <= 0 || v > 5) return FALLBACK;
+    return v;
+  }
+
+  function persist(v) {
+    try {
+      var c = readCfg();
+      c.videoSpeed = v;
+      window.localStorage[KEY] = JSON.stringify(c);
+      console.log('YSAMJO_SPEED_PERSIST ' + v);
+    } catch (e) {
+      console.log('YSAMJO_SPEED_PERSIST_FAIL ' + e);
+    }
+  }
+
+  function apply(v) {
+    var el = document.querySelector('video');
+    if (!el) return;
+    if (Math.abs(el.playbackRate - v) < 0.0005) return;
+    try {
+      el.playbackRate = v;
+      console.log('YSAMJO_SPEED_APPLY ' + v);
+    } catch (e) {}
+  }
+
+  function enforce() {
+    var v = desired();
+    console.log('YSAMJO_SPEED_ENFORCE ' + v);
+    quietUntil = Date.now() + 1500;
+    setTimeout(function() {
+      apply(v);
+    }, 0);
+    setTimeout(function() {
+      apply(v);
+    }, 250);
+    setTimeout(function() {
+      apply(v);
+    }, 1000);
+  }
+
+  function menuOpen() {
+    try {
+      var b = document.body ? document.body.textContent : '';
+      if (!b) return false;
+      if (b.indexOf('Wiedergabegeschwindigkeit') !== -1) return true;
+      if (b.indexOf('Playback speed') !== -1) return true;
+      var hits = b.match(/[0-9]\.[0-9]{1,2}x/g);
+      return !!(hits && hits.length >= 4);
+    } catch (e) {
+      return false;
+    }
+  }
+  document.addEventListener('canplay', enforce, true);
+  document.addEventListener('loadeddata', enforce, true);
+  document.addEventListener('ratechange', function(ev) {
+    var el = ev.target;
+    if (!el || !el.tagName || el.tagName !== 'VIDEO') return;
+    var v = el.playbackRate;
+    var open = menuOpen();
+    console.log('YSAMJO_SPEED_RATE ' + v + ' quiet=' + (Date.now() < quietUntil) + ' menu=' + (open ? 1 : 0));
+    if (Date.now() < quietUntil) return;
+    if (!open) return;
+    if (typeof v !== 'number' || !isFinite(v) || v <= 0 || v > 5) return;
+    if (Math.abs(v - desired()) < 0.0005) return;
+    if (Math.abs(v - 1) < 0.0005) return;
+    persist(v);
+  }, true);
+  setInterval(function() {
+    if (Date.now() < quietUntil) return;
+    apply(desired());
+  }, 2000);
 })();

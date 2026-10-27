@@ -36,12 +36,12 @@ val changeAppNamePatch = resourcePatch(
 
     val appName by stringOption(
         key = "appName",
-        default = "YouTube",
+        default = "YouTube\\nPremium",
         values = mapOf(
             "YouTube" to "YouTube",
             "YouTube MOD" to "YouTube MOD",
             "TizenTube MOD" to "TizenTube MOD",
-            "YouTube Premium (2 lignes)" to "YouTube\nPremium",
+            "YouTube Premium (2 lignes)" to "YouTube\\nPremium",
         ),
         title = "App name",
         description = "Name shown under the icon / banner. Any text works. " +

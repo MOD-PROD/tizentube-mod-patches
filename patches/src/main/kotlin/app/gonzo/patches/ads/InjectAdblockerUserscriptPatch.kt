@@ -7,6 +7,7 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patcher.patch.stringOption
 import java.io.File
+import java.util.logging.Logger
 
 private const val EXTENSION_CLASS = "Lapp/gonzo/extension/adblock/CobaltUserscriptInjector;"
 
@@ -15,6 +16,9 @@ private const val BUNDLED_USERSCRIPT = "/tizentube/userscript/adblock.user.js"
 
 /** Where the script is written inside the APK. Must match CobaltUserscriptInjector.USERSCRIPT_ASSET. */
 private const val USERSCRIPT_ASSET_PATH = "assets/tizentube-mod/adblock.user.js"
+
+/** Pre-filled path of a custom userscript on the patching device (phone running Morphe Manager). */
+private const val DEFAULT_USERSCRIPT_FILE = "/storage/emulated/0/Download/adblock.user.js"
 
 private object UserscriptResources
 
@@ -26,7 +30,8 @@ private object UserscriptResources
  * (see CobaltUserscriptInjector, technique by ysamjo):
  *
  *  1. Resource step: the userscript is written to assets/tizentube-mod/adblock.user.js.
- *     By default the bundled script is used; the "userscriptFile" option can point to your own .js.
+ *     The bundled script is ysamjo's payload (ad blocker + playback speed fix); the
+ *     "userscriptFile" option can point to your own .js (used only if the file exists).
  *  2. Bytecode step: CobaltActivity.onCreate() calls CobaltUserscriptInjector.schedule(this),
  *     which waits for the page and calls the registered evaluateJavaScript native.
  *
@@ -43,10 +48,14 @@ val injectAdblockerUserscriptPatch = bytecodePatch(
 
     val userscriptFile by stringOption(
         key = "userscriptFile",
-        default = null,
+        default = DEFAULT_USERSCRIPT_FILE,
+        values = mapOf(
+            "Download/adblock.user.js" to DEFAULT_USERSCRIPT_FILE,
+            "Bundled script (ysamjo)" to "",
+        ),
         title = "Custom userscript file",
-        description = "Absolute path to a .js file on the patching device to inject instead of the bundled ad blocker. " +
-            "Leave empty to use the bundled script.",
+        description = "Absolute path to a .js file on the patching device. If the file does not exist, " +
+            "the bundled ysamjo script (ad blocker + playback speed fix) is used.",
         required = false,
     )
 
@@ -54,12 +63,19 @@ val injectAdblockerUserscriptPatch = bytecodePatch(
     dependsOn(
         resourcePatch {
             execute {
-                val script: ByteArray = userscriptFile?.takeIf { it.isNotBlank() }?.let { path ->
-                    val file = File(path)
-                    if (!file.isFile) throw PatchException("Userscript file not found: $path")
-                    file.readBytes()
-                } ?: UserscriptResources::class.java.getResourceAsStream(BUNDLED_USERSCRIPT)?.use { it.readBytes() }
-                ?: throw PatchException("Bundled userscript missing: $BUNDLED_USERSCRIPT")
+                val logger = Logger.getLogger("InjectAdblockerUserscriptPatch")
+                val customFile = userscriptFile?.trim()?.takeIf { it.isNotEmpty() }?.let(::File)
+
+                // Custom file if present, otherwise the bundled script (no failure on a missing file,
+                // so the pre-filled path is safe to keep).
+                val script: ByteArray = if (customFile != null && customFile.isFile) {
+                    logger.info("Using custom userscript: ${customFile.path}")
+                    customFile.readBytes()
+                } else {
+                    if (customFile != null) logger.info("${customFile.path} not found, using the bundled script")
+                    UserscriptResources::class.java.getResourceAsStream(BUNDLED_USERSCRIPT)?.use { it.readBytes() }
+                        ?: throw PatchException("Bundled userscript missing: $BUNDLED_USERSCRIPT")
+                }
 
                 // copy = false: this is a new file, nothing to decode from the input APK.
                 get(USERSCRIPT_ASSET_PATH, copy = false).apply {

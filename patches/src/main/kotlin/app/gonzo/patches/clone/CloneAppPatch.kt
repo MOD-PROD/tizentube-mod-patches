@@ -28,15 +28,16 @@ private val PACKAGE_NAME_REGEX = Regex("^[a-z]\\w*(\\.[a-z]\\w*)+$")
 val cloneAppPatch = resourcePatch(
     name = "Clone app",
     description = "Changes the package name so the patched app can be installed next to the original TizenTube. " +
-        "Default package name: mod.youtube.tv.",
+        "Default package name: mod.android.youtube.tv.",
     default = false,
 ) {
     compatibleWith(COMPATIBILITY_TIZENTUBE)
 
     val packageName by stringOption(
         key = "packageName",
-        default = "mod.youtube.tv",
+        default = "mod.android.youtube.tv",
         values = mapOf(
+            "mod.android.youtube.tv" to "mod.android.youtube.tv",
             "mod.youtube.tv" to "mod.youtube.tv",
             "io.gh.reisxd.tizentube.cobalt.mod" to "io.gh.reisxd.tizentube.cobalt.mod",
         ),

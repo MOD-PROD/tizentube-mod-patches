@@ -71,9 +71,9 @@ tizentube-mod-patches/
 | # | Patch | Type | Défaut | Options |
 |---|---|---|---|---|
 | 1 | MOD Icon and Banner | resource | non | `replaceIcon`, `replaceBanner` |
-| 2 | Clone app | resource | non | `packageName` (mod.youtube.tv), `updatePermissions`, `updateProviders` |
-| 3 | Inject Adblocker Userscript | bytecode + resource + extension | oui | `userscriptFile` (chemin d'un .js perso) |
-| 4 | Change app name | resource | non | `appName` (YouTube, ou n'importe quel texte ; `\n` = retour à la ligne, ex. `YouTube\nPremium`). Compatible TizenTube **et YouTube** (`com.google.android.youtube`, toutes versions) |
+| 2 | Clone app | resource | non | `packageName` (par défaut `mod.android.youtube.tv`), `updatePermissions`, `updateProviders` |
+| 3 | Inject Adblocker Userscript | bytecode + resource + extension | oui | `userscriptFile` (par défaut `/storage/emulated/0/Download/adblock.user.js` ; si le fichier n'existe pas, le script intégré de ysamjo est utilisé) |
+| 4 | Change app name | resource | non | `appName` (par défaut `YouTube\nPremium`, ou n'importe quel texte ; `\n` = retour à la ligne, ex. `YouTube\nPremium`). Compatible TizenTube **et YouTube** (`com.google.android.youtube`, toutes versions) |
 
 Les patches 1 à 3 visent uniquement TizenTube 2.0.3 ; Change app name ne touche que le manifest et marche aussi sur YouTube. L'affichage sur 2 lignes dépend du launcher (certains launchers TV n'en montrent qu'une).
 
@@ -110,7 +110,9 @@ python3 branding-src/make_branding.py            # ajoute une pastille MOD + un 
 
 - Script livré : `patches/src/main/resources/tizentube/userscript/adblock.user.js` (ES5, sans requête externe).
 - Le patch l'écrit dans l'APK sous `assets/tizentube-mod/adblock.user.js` ; l'extension le lit au démarrage (fallback minimal embarqué si l'asset manque).
-- Il hooke `JSON.parse`, `fetch` et `XMLHttpRequest.response` pour retirer `adPlacements`, `playerAds`, `adSlots`… des réponses InnerTube, filtre les tuiles sponsorisées, et saute une pub qui passerait quand même.
+- C'est le script de ysamjo, repris sans modification (son `FULL_PAYLOAD`, testé sur appareil) :
+  - anti-pub : hook de `JSON.parse` et `fetch`, qui retire `adPlacements`, `playerAds`, `adSlots`… des réponses InnerTube ;
+  - correctif de vitesse : la vitesse choisie n'est plus remise à 1x à chaque vidéo.
 - Logcat : `adb logcat -s TizenTubeMod` → « Userscript injected ».
 
 ## Build
