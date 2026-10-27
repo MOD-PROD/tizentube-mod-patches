@@ -1,3 +1,9 @@
+## [1.4.1](https://github.com/MOD-PROD/tizentube-mod-patches/compare/v1.4.0...v1.4.1) (2026-10-27)
+
+### 🐛 Bug Fixes
+
+* show the actual values in option pickers ([079ac40](https://github.com/MOD-PROD/tizentube-mod-patches/commit/079ac40d4e66d0ff9ff11ddb888f52ef625a6eeb))
+
 ## [1.4.0](https://github.com/MOD-PROD/tizentube-mod-patches/compare/v1.3.0...v1.4.0) (2026-10-27)
 
 ### ✨ New Features

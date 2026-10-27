@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "patches": [
     {
       "name": "Change app name",
@@ -54,10 +54,10 @@
           "type": "kotlin.String",
           "default": "YouTube\\nPremium",
           "values": {
+            "YouTube\\nPremium": "YouTube\\nPremium",
             "YouTube": "YouTube",
             "YouTube MOD": "YouTube MOD",
-            "TizenTube MOD": "TizenTube MOD",
-            "YouTube Premium (2 lignes)": "YouTube\\nPremium"
+            "TizenTube MOD": "TizenTube MOD"
           }
         }
       ]
@@ -155,7 +155,7 @@
           "type": "kotlin.String",
           "default": "/storage/emulated/0/Download/adblock.user.js",
           "values": {
-            "Download/adblock.user.js": "/storage/emulated/0/Download/adblock.user.js",
+            "/storage/emulated/0/Download/adblock.user.js": "/storage/emulated/0/Download/adblock.user.js",
             "Bundled script": ""
           }
         }
