@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/MOD-PROD/tizentube-mod-patches/compare/v1.0.1...v1.1.0) (2026-10-27)
+
+### ✨ New Features
+
+* add Change app name patch ([0e81c72](https://github.com/MOD-PROD/tizentube-mod-patches/commit/0e81c729f0a785b3d2d6b39f0bf6cc14abc0d38b))
+
 ## [1.0.1](https://github.com/MOD-PROD/tizentube-mod-patches/compare/v1.0.0...v1.0.1) (2026-10-27)
 
 ### 🐛 Bug Fixes

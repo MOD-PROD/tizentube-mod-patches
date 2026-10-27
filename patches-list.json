@@ -1,7 +1,48 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "patches": [
+    {
+      "name": "Change app name",
+      "description": "Changes the app name shown on the launcher and in the app list.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "io.gh.reisxd.tizentube.cobalt",
+          "name": "TizenTube",
+          "description": null,
+          "apkFileType": "APK",
+          "appIconColor": "#FF0000",
+          "signatures": null,
+          "formFactor": "MOBILE",
+          "targets": [
+            {
+              "version": "2.0.3",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "appName",
+          "title": "App name",
+          "description": "Name shown under the icon / banner. Any text works.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "YouTube",
+          "values": {
+            "YouTube": "YouTube",
+            "YouTube MOD": "YouTube MOD",
+            "TizenTube MOD": "TizenTube MOD"
+          }
+        }
+      ]
+    },
     {
       "name": "Clone app",
       "description": "Changes the package name so the patched app can be installed next to the original TizenTube. Default package name: mod.youtube.tv.",
