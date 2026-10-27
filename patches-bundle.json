@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-27T08:34:32",
-  "description": "## 1.0.0 (2026-10-27)\n\n### 🐛 Bug Fixes\n\n* add patch list markers to README for the release script ([cc427f2](https://github.com/MOD-PROD/tizentube-mod-patches/commit/cc427f21c934515a604c126b920f3da444014b93))\n* keep only the patches useful for TizenTube ([31f6b58](https://github.com/MOD-PROD/tizentube-mod-patches/commit/31f6b588ff1a8204e1b64e8bbacae8979016a2e6))\n\n### ✨ New Features\n\n* initial TizenTube MOD patches for TizenTube Cobalt 2.0.3 ([3349373](https://github.com/MOD-PROD/tizentube-mod-patches/commit/33493730013b0b3b89d1fe3c62419df820c72623))",
-  "download_url": "https://github.com/MOD-PROD/tizentube-mod-patches/releases/download/v1.0.0/patches-1.0.0.mpp",
+  "created_at": "2026-10-27T09:28:51",
+  "description": "## [1.0.1](https://github.com/MOD-PROD/tizentube-mod-patches/compare/v1.0.0...v1.0.1) (2026-10-27)\n\n### 🐛 Bug Fixes\n\n* use the icon and banner artwork as-is, without MOD overlay ([8328e92](https://github.com/MOD-PROD/tizentube-mod-patches/commit/8328e921f9e591f7fc1cf59e5b31d5f38e8595eb))",
+  "download_url": "https://github.com/MOD-PROD/tizentube-mod-patches/releases/download/v1.0.1/patches-1.0.1.mpp",
   "signature_download_url": "",
-  "version": "1.0.0"
+  "version": "1.0.1"
 }

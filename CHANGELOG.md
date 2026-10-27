@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/MOD-PROD/tizentube-mod-patches/compare/v1.0.0...v1.0.1) (2026-10-27)
+
+### 🐛 Bug Fixes
+
+* use the icon and banner artwork as-is, without MOD overlay ([8328e92](https://github.com/MOD-PROD/tizentube-mod-patches/commit/8328e921f9e591f7fc1cf59e5b31d5f38e8595eb))
+
 ## 1.0.0 (2026-10-27)
 
 ### 🐛 Bug Fixes
