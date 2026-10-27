@@ -63,7 +63,9 @@ tizentube-mod-patches/
 | 1 | MOD Icon and Banner | resource | non | `replaceIcon`, `replaceBanner` |
 | 2 | Clone app | resource | non | `packageName` (mod.youtube.tv), `updatePermissions`, `updateProviders` |
 | 3 | Inject Adblocker Userscript | bytecode + resource + extension | oui | `userscriptFile` (chemin d'un .js perso) |
-| 4 | Change app name | resource | non | `appName` (YouTube, ou n'importe quel texte) |
+| 4 | Change app name | resource | non | `appName` (YouTube, ou n'importe quel texte ; `\n` = retour à la ligne, ex. `YouTube\nPremium`). Compatible TizenTube **et YouTube** (`com.google.android.youtube`, toutes versions) |
+
+Les patches 1 à 3 visent uniquement TizenTube 2.0.3 ; Change app name ne touche que le manifest et marche aussi sur YouTube. L'affichage sur 2 lignes dépend du launcher (certains launchers TV n'en montrent qu'une).
 
 Clone app n'est utile que pour garder le TizenTube original installé à côté. L'adblock est une couche en plus de celui de TizenTube.
 

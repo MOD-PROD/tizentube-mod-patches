@@ -1,6 +1,7 @@
 package app.gonzo.patches.branding
 
 import app.gonzo.patches.shared.Constants.COMPATIBILITY_TIZENTUBE
+import app.gonzo.patches.shared.Constants.COMPATIBILITY_YOUTUBE
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patcher.patch.stringOption
@@ -18,6 +19,12 @@ import java.util.logging.Logger
  *
  * The new name is written as a literal attribute value, which works whether the original was
  * a literal or a @string reference, and does not touch strings.xml (so no other text changes).
+ *
+ * Line break: typing `\n` in the option (e.g. `YouTube\nPremium`) inserts a real newline, so
+ * the launcher can show the name on two lines. Whether both lines are displayed depends on the
+ * launcher (most phone launchers allow two lines; some TV launchers show a single one).
+ *
+ * Version independent: it only edits the manifest, so it applies to TizenTube and to YouTube.
  */
 @Suppress("unused")
 val changeAppNamePatch = resourcePatch(
@@ -25,7 +32,7 @@ val changeAppNamePatch = resourcePatch(
     description = "Changes the app name shown on the launcher and in the app list.",
     default = false,
 ) {
-    compatibleWith(COMPATIBILITY_TIZENTUBE)
+    compatibleWith(COMPATIBILITY_TIZENTUBE, COMPATIBILITY_YOUTUBE)
 
     val appName by stringOption(
         key = "appName",
@@ -34,9 +41,11 @@ val changeAppNamePatch = resourcePatch(
             "YouTube" to "YouTube",
             "YouTube MOD" to "YouTube MOD",
             "TizenTube MOD" to "TizenTube MOD",
+            "YouTube Premium (2 lignes)" to "YouTube\nPremium",
         ),
         title = "App name",
-        description = "Name shown under the icon / banner. Any text works.",
+        description = "Name shown under the icon / banner. Any text works. " +
+            "Write \\n for a line break, e.g. YouTube\\nPremium.",
         required = true,
     ) {
         // A leading @ or ? would be read by Android as a resource reference.
@@ -44,7 +53,8 @@ val changeAppNamePatch = resourcePatch(
     }
 
     execute {
-        val newName = appName!!.trim()
+        // A typed \n (backslash + n) in the option becomes a real line break.
+        val newName = appName!!.trim().replace("\\n", "\n")
 
         document("AndroidManifest.xml").use { document ->
             val application = document.getNode("application") as Element
@@ -63,7 +73,9 @@ val changeAppNamePatch = resourcePatch(
                     }
             }
 
-            Logger.getLogger("ChangeAppNamePatch").info("App renamed to \"$newName\" ($renamed label(s), was $originalLabel)")
+            Logger.getLogger("ChangeAppNamePatch").info(
+                "App renamed to \"${newName.replace("\n", "\\n")}\" ($renamed label(s), was $originalLabel)",
+            )
         }
     }
 }
