@@ -35,6 +35,9 @@ tizentube-mod-patches/
 
 ## Les 3 patches
 
+<!-- PATCHES_START EXPANDED -->
+<!-- PATCHES_END -->
+
 | # | Patch | Type | Défaut | Options |
 |---|---|---|---|---|
 | 1 | MOD Icon and Banner | resource | non | `replaceIcon`, `replaceBanner` |
