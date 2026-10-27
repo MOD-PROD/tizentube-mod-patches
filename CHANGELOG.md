@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/MOD-PROD/tizentube-mod-patches/compare/v1.1.0...v1.2.0) (2026-10-27)
+
+### ✨ New Features
+
+* support 2-line app name and YouTube compatibility ([fa64c22](https://github.com/MOD-PROD/tizentube-mod-patches/commit/fa64c227568b71b169a161e735875a86a37ed330))
+
 ## [1.1.0](https://github.com/MOD-PROD/tizentube-mod-patches/compare/v1.0.1...v1.1.0) (2026-10-27)
 
 ### ✨ New Features
