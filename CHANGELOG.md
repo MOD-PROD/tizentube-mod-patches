@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/MOD-PROD/tizentube-mod-patches/compare/v1.2.0...v1.3.0) (2026-10-27)
+
+### ✨ New Features
+
+* ship ysamjo's userscript unchanged and pre-fill patch options ([aa166cd](https://github.com/MOD-PROD/tizentube-mod-patches/commit/aa166cd35ce45d20ca69d2d98dcb21dd8797466f))
+
 ## [1.2.0](https://github.com/MOD-PROD/tizentube-mod-patches/compare/v1.1.0...v1.2.0) (2026-10-27)
 
 ### ✨ New Features
