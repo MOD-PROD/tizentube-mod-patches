@@ -1,6 +1,6 @@
 # TizenTube MOD Patches
 
-Bundle de 7 patches pour **TizenTube Cobalt 2.0.3** (`io.gh.reisxd.tizentube.cobalt`, APK unique), compatible avec Morphe (patcher 2.0.0).
+Bundle de 3 patches pour **TizenTube Cobalt 2.0.3** (`io.gh.reisxd.tizentube.cobalt`, APK unique), compatible avec Morphe (patcher 2.0.0).
 
 ## Structure
 
@@ -18,41 +18,32 @@ tizentube-mod-patches/
 │   └── make_branding.py
 ├── extensions/extension/          # code Java injecté dans l'APK (→ extensions/extension.mpe)
 │   └── src/main/java/app/gonzo/extension/
-│       ├── adblock/CobaltUserscriptInjector.java
-│       └── versioncode/VersionCodePatch.java
+│       └── adblock/CobaltUserscriptInjector.java
 └── patches/
     ├── build.gradle.kts           # about{} + dépendance morphe-patches-library
     └── src/main/
         ├── kotlin/app/gonzo/patches/
         │   ├── shared/Constants.kt                       # compatibilité TizenTube 2.0.3
-        │   ├── installer/ChangeInstallerSourcePatch.kt   # 1
+        │   ├── branding/ModIconAndBannerPatch.kt         # 1
         │   ├── clone/CloneAppPatch.kt                    # 2
-        │   ├── updates/DisablePlayStoreUpdatesPatch.kt   # 3
-        │   ├── network/OverrideCertificatePinningPatch.kt# 4
-        │   ├── signature/SpoofSignaturePatch.kt          # 5
-        │   ├── branding/ModIconAndBannerPatch.kt         # 6
-        │   └── ads/Fingerprints.kt + InjectAdblockerUserscriptPatch.kt  # 7
+        │   └── ads/Fingerprints.kt + InjectAdblockerUserscriptPatch.kt  # 3
         └── resources/tizentube/
             ├── branding/icon/{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}.png
             ├── branding/banner/{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}.png
             └── userscript/adblock.user.js
 ```
 
-## Les 7 patches
+## Les 3 patches
 
 | # | Patch | Type | Défaut | Options |
 |---|---|---|---|---|
-| 1 | Change installer source | resource → bytecode (lib) | non | `packageInstallerName` (com.android.vending) |
+| 1 | MOD Icon and Banner | resource | non | `replaceIcon`, `replaceBanner` |
 | 2 | Clone app | resource | non | `packageName` (mod.youtube.tv), `updatePermissions`, `updateProviders` |
-| 3 | Disable Play Store updates | bytecode + resource + extension | non | — |
-| 4 | Override certificate pinning | resource | non | — |
-| 5 | Spoof signature | resource → bytecode (lib) | non | — |
-| 6 | MOD Icon and Banner | resource | non | `replaceIcon`, `replaceBanner` |
-| 7 | Inject Adblocker Userscript | bytecode + resource + extension | oui | `userscriptFile` (chemin d'un .js perso) |
+| 3 | Inject Adblocker Userscript | bytecode + resource + extension | oui | `userscriptFile` (chemin d'un .js perso) |
 
-Les patches 1 et 5 réutilisent les briques officielles de `morphe-patches-library` (`changePackageInstallerPatch`, `spoofSignaturePatch`). Le 5 exige l'APK **original** non re-signé.
+Clone app n'est utile que pour garder le TizenTube original installé à côté. L'adblock est une couche en plus de celui de TizenTube.
 
-## Patch 6 — où placer les images
+## Patch 1 — où placer les images
 
 Le patch ne code pas les noms en dur : il lit `android:icon`, `android:roundIcon` et `android:banner` dans le manifest (dans TizenTube 2.0.x : `@mipmap/ic_app` et `@drawable/app_banner`), retrouve chaque fichier `res/<type>-<densité>/<nom>` et y copie l'image de la bonne densité.
 
@@ -79,7 +70,7 @@ python3 branding-src/make_branding.py            # ajoute pastille MOD + tag Tiz
 python3 branding-src/make_branding.py --no-badge # si tes images ont déjà la pastille
 ```
 
-## Patch 7 — userscript
+## Patch 3 — userscript
 
 - Script livré : `patches/src/main/resources/tizentube/userscript/adblock.user.js` (ES5, sans requête externe).
 - Le patch l'écrit dans l'APK sous `assets/tizentube-mod/adblock.user.js` ; l'extension le lit au démarrage (fallback minimal embarqué si l'asset manque).
@@ -107,5 +98,5 @@ https://morphe.software/add-source?github=MOD-PROD/tizentube-mod-patches
 
 ## Crédits
 
-- Patches 1 à 5 adaptés de [MorpheApp/morphe-patches](https://github.com/MorpheApp/morphe-patches) (GPLv3 + conditions section 7, voir NOTICE).
+- Clone app adapté de [MorpheApp/morphe-patches](https://github.com/MorpheApp/morphe-patches) (GPLv3 + conditions section 7, voir NOTICE).
 - Technique d'injection Cobalt et idée du patch branding : [ysamjo/morphe-patches](https://github.com/ysamjo/morphe-patches) (GPLv3).

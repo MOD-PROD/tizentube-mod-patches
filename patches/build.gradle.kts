@@ -17,8 +17,7 @@ patches {
 val patchListGeneratorClasspath = configurations.create("patchListGeneratorClasspath")
 
 dependencies {
-    // Bundled into the .mpp: provides changePackageInstallerPatch, spoofSignaturePatch
-    // (with its prebuilt signature.dex) and the XML/resource helpers.
+    // Bundled into the .mpp: XML/resource helpers (getNode, asSequence, findElementByAttributeValue...).
     implementation(libs.morphe.patches.library)
 
     compileOnly(libs.gson)
