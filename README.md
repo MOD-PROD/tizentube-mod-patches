@@ -87,8 +87,8 @@ Pour changer le visuel : remplace `branding-src/icon_master.png` (carré) et `br
 
 ```
 pip install pillow
-python3 branding-src/make_branding.py            # ajoute pastille MOD + tag TizenTube
-python3 branding-src/make_branding.py --no-badge # si tes images ont déjà la pastille
+python3 branding-src/make_branding.py --no-badge # images utilisées telles quelles (réglage actuel)
+python3 branding-src/make_branding.py            # ajoute une pastille MOD + un tag TizenTube
 ```
 
 ## Patch 3 — userscript

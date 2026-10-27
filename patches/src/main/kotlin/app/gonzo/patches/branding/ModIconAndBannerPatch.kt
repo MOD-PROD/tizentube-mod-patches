@@ -44,10 +44,8 @@ private fun densityOf(directory: String): String? {
 }
 
 /**
- * Replaces the TizenTube launcher artwork with a YouTube-style version carrying a "MOD" badge.
- *
- *  - Icon:   YouTube play symbol + MOD pill.
- *  - Banner: YouTube logo + small TizenTube tag + MOD pill.
+ * Replaces the TizenTube launcher artwork with the YouTube-style icon and banner bundled in
+ * patches/src/main/resources/tizentube/branding/ (used as they are, no overlay added).
  *
  * On Android TV the home screen draws `android:banner`, NOT `android:icon`; a patch that only
  * swapped the icon would be invisible on the TV launcher, so both are replaced.
@@ -62,7 +60,7 @@ private fun densityOf(directory: String): String? {
 @Suppress("unused")
 val modIconAndBannerPatch = resourcePatch(
     name = "MOD Icon and Banner",
-    description = "Replaces the app icon and the Android TV launcher banner with YouTube artwork and a MOD badge. " +
+    description = "Replaces the app icon and the Android TV launcher banner with YouTube artwork. " +
         "On Android TV the launcher shows the banner, so both are replaced.",
     default = false,
 ) {
