@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "patches": [
     {
       "name": "Change app name",
@@ -150,13 +150,13 @@
         {
           "key": "userscriptFile",
           "title": "Custom userscript file",
-          "description": "Absolute path to a .js file on the patching device. If the file does not exist, the bundled ysamjo script (ad blocker + playback speed fix) is used.",
+          "description": "Absolute path to a .js file on the patching device. If the file does not exist, the bundled script (ad blocker, sponsored tiles, playback speed keeper) is used.",
           "required": false,
           "type": "kotlin.String",
           "default": "/storage/emulated/0/Download/adblock.user.js",
           "values": {
             "Download/adblock.user.js": "/storage/emulated/0/Download/adblock.user.js",
-            "Bundled script (ysamjo)": ""
+            "Bundled script": ""
           }
         }
       ]
